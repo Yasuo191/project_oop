@@ -1,0 +1,5 @@
+FULL,E01,Dương Thành Hiếu,50000.0
+FULL,E02,Nguyễn Thái Sơn,50000.0
+FULL,E03,Nguyễn Chí Sỹ,500000.0
+PART,E04,Dương Kiệt Anh,5.24288E8
+MANAGER,E05,Hoàng Thị Vân Anh,201901.0
