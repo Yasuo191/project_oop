@@ -17,4 +17,9 @@ public class Manager extends Employee {
     public double calculateSalary(){
         return baseSalary + bonus;
     }
+
+    @Override
+    public String toFileString(){
+        return "MANAGER," + id + "," + name + "," + baseSalary + "," + bonus;
+    }
 }

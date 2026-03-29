@@ -4,89 +4,107 @@ import java.io.*;
 import model.*;
 public class EmployeeManager {
     private ArrayList<Employee> employees = new ArrayList<>();
-    private String fileName = "employees.txt";
-    public void addEmployee(Employee e){
+    private String fileName = "data/employees.txt";
+
+    // ===== ADD =====
+    public boolean addEmployee(Employee e){
+        for(Employee emp : employees){
+            if(emp.getId().equalsIgnoreCase(e.getId())){
+                return false; 
+            }
+        }
         employees.add(e);
+        return true;
     }
+
+    // ===== GET =====
     public ArrayList<Employee> getEmployees(){
         return employees;
     }
 
-    // SEARCH
-    public ArrayList<Employee> searchByName(String keyword){
-        ArrayList<Employee> result = new ArrayList<>();
-        for(Employee e : employees){
-            if(e.getName().toLowerCase().contains(keyword.toLowerCase())){
-                result.add(e);
-            }
+    // ===== UPDATE =====
+    public void updateEmployee(int index, Employee e){
+        if(index >= 0 && index < employees.size()){
+            employees.set(index, e);
         }
-        return result;
     }
 
-    // DELETE
+    // ===== DELETE =====
     public void deleteEmployee(int index){
         if(index >= 0 && index < employees.size()){
             employees.remove(index);
         }
     }
 
-    // SORT BY ID ASC
-    public void sortIdAsc(){
-        employees.sort((a,b) ->
-                a.getId().compareToIgnoreCase(b.getId()));
-    }
-
-    // SORT BY ID DESC
-    public void sortIdDesc(){
-        employees.sort((a,b) ->
-                b.getId().compareToIgnoreCase(a.getId()));
-    }
-
-    // SORT SALARY ASC
-    public void sortSalaryAsc(){
-        employees.sort((a,b) ->
-                Double.compare(a.calculateSalary(), b.calculateSalary()));
-    }
-
-// SORT SALARY DESC
-public void sortSalaryDesc(){
-    employees.sort((a,b) ->
-            Double.compare(b.calculateSalary(), a.calculateSalary()));
-}
-
-    // SAVE FILE
-    public void saveToFile(){
-
-        try{
-
-            PrintWriter pw = new PrintWriter(new FileWriter(fileName));
-
-            for(Employee e : employees){
-
-                if(e instanceof FulltimeEmployee){
-                    pw.println("FULL," + e.getId() + "," + e.getName() + "," + e.calculateSalary());
-                }
-
-                else if(e instanceof PartTimeEmployee){
-                    pw.println("PART," + e.getId() + "," + e.getName() + "," + e.calculateSalary());
-                }
-
-                else if(e instanceof Manager){
-                    pw.println("MANAGER," + e.getId() + "," + e.getName() + "," + e.calculateSalary());
-                }
-
+    // ===== SEARCH BY ID =====
+    public ArrayList<Employee> searchById(String keyword){
+        ArrayList<Employee> result = new ArrayList<>();
+        if(keyword == null || keyword.isEmpty()){
+            return new ArrayList<>(employees);
+        }
+        for(Employee e : employees){
+            if(e.getId().toLowerCase().contains(keyword.toLowerCase())){
+                result.add(e);
             }
+        }
 
+        return result;
+    }
+       // ===== SEARCH BY NAME =====
+public ArrayList<Employee> searchByName(String keyword){
+    ArrayList<Employee> result = new ArrayList<>();
+    if(keyword == null || keyword.isEmpty()){
+        return new ArrayList<>(employees);
+    }
+    for(Employee e : employees){
+        if(e.getName().toLowerCase().contains(keyword.toLowerCase())){
+            result.add(e);
+        }
+    }
+    return result;
+}
+    // ===== FILTER BY TYPE =====
+    public ArrayList<Employee> filterByType(String type){
+        ArrayList<Employee> result = new ArrayList<>();
+        for(Employee e : employees){
+            if(type.equals("Fulltime") && e instanceof FulltimeEmployee){
+                result.add(e);
+            }
+            else if(type.equals("PartTime") && e instanceof PartTimeEmployee){
+                result.add(e);
+            }
+            else if(type.equals("Manager") && e instanceof Manager){
+                result.add(e);
+            }
+        }
+        return result;
+    }
+
+    // ===== SORT SALARY =====
+    public void sortSalary(ArrayList<Employee> list, boolean asc){
+
+        list.sort((a,b) -> asc ?
+                Double.compare(a.calculateSalary(), b.calculateSalary())
+                :
+                Double.compare(b.calculateSalary(), a.calculateSalary())
+        );
+    }
+
+    // ===== SAVE FILE  =====
+    public void saveToFile(){
+        try{
+            PrintWriter pw = new PrintWriter(new FileWriter(fileName));
+            for(Employee e : employees){
+                pw.println(e.toFileString()); 
+            }
             pw.close();
-
         }
         catch(Exception e){
             e.printStackTrace();
         }
-
     }
 
-    // LOAD FILE
+    // ===== LOAD FILE  =====
     public void loadFromFile(){
         try{
             BufferedReader br = new BufferedReader(new FileReader(fileName));
@@ -96,23 +114,25 @@ public void sortSalaryDesc(){
                 String type = data[0];
                 String id = data[1];
                 String name = data[2];
-                double salary = Double.parseDouble(data[3]);
                 if(type.equals("FULL")){
+                    double salary = Double.parseDouble(data[3]);
                     employees.add(new FulltimeEmployee(id,name,salary));
                 }
                 else if(type.equals("PART")){
-                    employees.add(new PartTimeEmployee(id,name,8,salary));
+                    int hours = Integer.parseInt(data[3]);
+                    double rate = Double.parseDouble(data[4]);
+                    employees.add(new PartTimeEmployee(id,name,hours,rate));
                 }
                 else if(type.equals("MANAGER")){
-                    employees.add(new Manager(id,name,salary,500));
+                    double salary = Double.parseDouble(data[3]);
+                    double bonus = Double.parseDouble(data[4]);
+                    employees.add(new Manager(id,name,salary,bonus));
                 }
             }
-
             br.close();
         }
         catch(Exception e){
             System.out.println("No data file yet");
         }
-
     }
 }

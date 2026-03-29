@@ -17,4 +17,9 @@ public class PartTimeEmployee extends Employee {
     public double calculateSalary(){
         return hours * rate;
     }
+    
+    @Override
+    public String toFileString(){
+        return "PART," + id + "," + name + "," + hours + "," + rate;
+    }
 }

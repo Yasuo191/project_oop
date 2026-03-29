@@ -1,8 +1,6 @@
 package ui;
-
 import model.*;
 import service.EmployeeManager;
-
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -11,21 +9,18 @@ import javax.swing.table.TableRowSorter;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 public class MainFrame extends JFrame {
-
+    JComboBox<String> cbSearchType;
     JTextField txtId, txtName, txtSalary, txtHours, txtSearch;
     JComboBox<String> cbType;
     JTable table;
-
     JLabel lblSalary;
     JLabel lblExtra;
-
     EmployeeManager manager = new EmployeeManager();
-
     DefaultTableModel tableModel;
     TableRowSorter<DefaultTableModel> sorter;
-
     public MainFrame(){
 
         setTitle("Employee Management");
@@ -37,38 +32,29 @@ public class MainFrame extends JFrame {
         // ===== LEFT PANEL =====
         JPanel leftPanel = new JPanel(new BorderLayout(10,10));
         leftPanel.setBorder(BorderFactory.createTitledBorder("Employee Info"));
-
         JPanel formPanel = new JPanel(new GridLayout(6,2,8,8));
-
         formPanel.add(new JLabel("ID"));
         txtId = new JTextField();
         formPanel.add(txtId);
-
         formPanel.add(new JLabel("Name"));
         txtName = new JTextField();
         formPanel.add(txtName);
-
         formPanel.add(new JLabel("Type"));
         cbType = new JComboBox<>(new String[]{
                 "Fulltime","PartTime","Manager"
         });
         formPanel.add(cbType);
-
         lblSalary = new JLabel("Salary");
         formPanel.add(lblSalary);
-
         txtSalary = new JTextField();
         formPanel.add(txtSalary);
-
         lblExtra = new JLabel("Extra");
         formPanel.add(lblExtra);
-
         txtHours = new JTextField();
         formPanel.add(txtHours);
-
         leftPanel.add(formPanel,BorderLayout.CENTER);
 
-        // ===== BUTTON PANEL =====
+        // ===== BUTTON =====
         JPanel btnPanel = new JPanel(new GridLayout(2,2,10,10));
 
         JButton btnAdd = new JButton("Add");
@@ -82,8 +68,8 @@ public class MainFrame extends JFrame {
         btnPanel.add(btnSort);
 
         leftPanel.add(btnPanel,BorderLayout.SOUTH);
-
         leftPanel.setPreferredSize(new Dimension(300,0));
+
         add(leftPanel,BorderLayout.WEST);
 
         // ===== TABLE =====
@@ -102,15 +88,15 @@ public class MainFrame extends JFrame {
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
 
-        JScrollPane scrollPane = new JScrollPane(table);
-        scrollPane.setBorder(BorderFactory.createTitledBorder("Employee List"));
+        add(new JScrollPane(table),BorderLayout.CENTER);
 
-        add(scrollPane,BorderLayout.CENTER);
-
-        // ===== SEARCH PANEL =====
+        // ===== SEARCH =====
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
         searchPanel.add(new JLabel("Search"));
+
+        cbSearchType = new JComboBox<>(new String[]{"ID","Name"});
+        searchPanel.add(cbSearchType);
 
         txtSearch = new JTextField(20);
         searchPanel.add(txtSearch);
@@ -121,12 +107,10 @@ public class MainFrame extends JFrame {
         add(searchPanel,BorderLayout.SOUTH);
 
         // ===== EVENTS =====
-
         btnAdd.addActionListener(e -> addEmployee());
         btnDelete.addActionListener(e -> deleteEmployee());
         btnUpdate.addActionListener(e -> updateEmployee());
         btnShowAll.addActionListener(e -> loadTable());
-
         btnSort.addActionListener(e -> showSortMenu());
 
         cbType.addActionListener(e -> updateFormByType());
@@ -156,29 +140,21 @@ public class MainFrame extends JFrame {
         String type = cbType.getSelectedItem().toString();
 
         if(type.equals("Fulltime")){
-
             lblSalary.setText("Salary");
             lblExtra.setVisible(false);
             txtHours.setVisible(false);
-
         }
         else if(type.equals("PartTime")){
-
             lblSalary.setText("Rate");
-
             lblExtra.setText("Hours");
             lblExtra.setVisible(true);
             txtHours.setVisible(true);
-
         }
         else{
-
             lblSalary.setText("Salary");
-
             lblExtra.setText("Bonus");
             lblExtra.setVisible(true);
             txtHours.setVisible(true);
-
         }
 
         revalidate();
@@ -188,46 +164,45 @@ public class MainFrame extends JFrame {
     // ===== ADD =====
     private void addEmployee(){
 
-        String id = txtId.getText();
-        String name = txtName.getText();
-        String type = cbType.getSelectedItem().toString();
+        String id = txtId.getText().trim();
+        String name = txtName.getText().trim();
+
+        if(id.isEmpty() || name.isEmpty()){
+            JOptionPane.showMessageDialog(this,"ID and Name cannot be empty");
+            return;
+        }
 
         Employee emp;
 
         try{
+            String type = cbType.getSelectedItem().toString();
 
             if(type.equals("Fulltime")){
-
-                double salary = Double.parseDouble(txtSalary.getText());
-                emp = new FulltimeEmployee(id,name,salary);
-
+                emp = new FulltimeEmployee(id,name,
+                        Double.parseDouble(txtSalary.getText()));
             }
             else if(type.equals("PartTime")){
-
-                int hours = Integer.parseInt(txtHours.getText());
-                double rate = Double.parseDouble(txtSalary.getText());
-
-                emp = new PartTimeEmployee(id,name,hours,rate);
-
+                emp = new PartTimeEmployee(id,name,
+                        Integer.parseInt(txtHours.getText()),
+                        Double.parseDouble(txtSalary.getText()));
             }
             else{
-
-                double salary = Double.parseDouble(txtSalary.getText());
-                double bonus = Double.parseDouble(txtHours.getText());
-
-                emp = new Manager(id,name,salary,bonus);
-
+                emp = new Manager(id,name,
+                        Double.parseDouble(txtSalary.getText()),
+                        Double.parseDouble(txtHours.getText()));
             }
-
         }
         catch(Exception ex){
             JOptionPane.showMessageDialog(this,"Invalid number input");
             return;
         }
 
-        manager.addEmployee(emp);
-        manager.saveToFile();
+        if(!manager.addEmployee(emp)){
+            JOptionPane.showMessageDialog(this,"ID already exists!");
+            return;
+        }
 
+        manager.saveToFile();
         loadTable();
         clearForm();
     }
@@ -263,167 +238,147 @@ public class MainFrame extends JFrame {
 
         row = table.convertRowIndexToModel(row);
 
-        String id = txtId.getText();
-        String name = txtName.getText();
-        String type = cbType.getSelectedItem().toString();
-
         Employee emp;
 
         try{
+            String type = cbType.getSelectedItem().toString();
+            String id = txtId.getText();
+            String name = txtName.getText();
 
             if(type.equals("Fulltime")){
-
-                double salary = Double.parseDouble(txtSalary.getText());
-                emp = new FulltimeEmployee(id,name,salary);
-
+                emp = new FulltimeEmployee(id,name,
+                        Double.parseDouble(txtSalary.getText()));
             }
             else if(type.equals("PartTime")){
-
-                int hours = Integer.parseInt(txtHours.getText());
-                double rate = Double.parseDouble(txtSalary.getText());
-
-                emp = new PartTimeEmployee(id,name,hours,rate);
-
+                emp = new PartTimeEmployee(id,name,
+                        Integer.parseInt(txtHours.getText()),
+                        Double.parseDouble(txtSalary.getText()));
             }
             else{
-
-                double salary = Double.parseDouble(txtSalary.getText());
-                double bonus = Double.parseDouble(txtHours.getText());
-
-                emp = new Manager(id,name,salary,bonus);
-
+                emp = new Manager(id,name,
+                        Double.parseDouble(txtSalary.getText()),
+                        Double.parseDouble(txtHours.getText()));
             }
-
         }
         catch(Exception ex){
             JOptionPane.showMessageDialog(this,"Invalid number input");
             return;
         }
 
-        manager.getEmployees().set(row, emp);
+        manager.updateEmployee(row, emp);
 
         manager.saveToFile();
         loadTable();
         clearForm();
     }
 
-    // ===== SORT MENU =====
+    // ===== SORT =====
     private void showSortMenu(){
 
-        String[] options = {
-                "Sort ID Ascending",
-                "Sort ID Descending",
-                "Sort Salary Ascending",
-                "Sort Salary Descending"
-        };
-
-        int choice = JOptionPane.showOptionDialog(
-                this,
-                "Choose sort type",
-                "Sort Employees",
-                JOptionPane.DEFAULT_OPTION,
-                JOptionPane.INFORMATION_MESSAGE,
-                null,
-                options,
-                options[0]
+        String type = (String) JOptionPane.showInputDialog(
+                this,"Choose type","Filter",
+                JOptionPane.QUESTION_MESSAGE,
+                null,new String[]{"Fulltime","PartTime","Manager"},"Fulltime"
         );
 
-        switch(choice){
+        if(type == null) return;
 
-            case 0: manager.sortIdAsc(); break;
-            case 1: manager.sortIdDesc(); break;
-            case 2: manager.sortSalaryAsc(); break;
-            case 3: manager.sortSalaryDesc(); break;
+        int order = JOptionPane.showOptionDialog(
+                this,"Sort by salary","Sort",
+                JOptionPane.DEFAULT_OPTION,
+                JOptionPane.INFORMATION_MESSAGE,
+                null,new String[]{"Ascending","Descending"},"Ascending"
+        );
 
-        }
-
-        manager.saveToFile();
-        loadTable();
-    }
-
-    // ===== SEARCH =====
-    private void searchEmployee(){
-
-        String keyword = txtSearch.getText();
+        ArrayList<Employee> list = manager.filterByType(type);
+        manager.sortSalary(list, order == 0);
 
         tableModel.setRowCount(0);
 
-        for(Employee e : manager.searchByName(keyword)){
-
+        for(Employee e : list){
             tableModel.addRow(new Object[]{
-                    e.getId(),
-                    e.getName(),
+                    e.getId(), e.getName(),
                     e.getClass().getSimpleName(),
                     e.calculateSalary()
             });
-
         }
     }
 
-    // ===== LOAD TABLE =====
+    // ===== SEARCH =====
+private void searchEmployee(){
+
+    String keyword = txtSearch.getText();
+    String type = cbSearchType.getSelectedItem().toString();
+
+    tableModel.setRowCount(0);
+
+    ArrayList<Employee> result;
+
+    if(type.equals("ID")){
+        result = manager.searchById(keyword);
+    } else {
+        result = manager.searchByName(keyword);
+    }
+
+    for(Employee e : result){
+        tableModel.addRow(new Object[]{
+                e.getId(),
+                e.getName(),
+                e.getClass().getSimpleName(),
+                e.calculateSalary()
+        });
+    }
+}
+
+    // ===== LOAD =====
     private void loadTable(){
 
         tableModel.setRowCount(0);
 
         for(Employee e : manager.getEmployees()){
-
             tableModel.addRow(new Object[]{
                     e.getId(),
                     e.getName(),
                     e.getClass().getSimpleName(),
                     e.calculateSalary()
             });
-
         }
     }
 
-    // ===== FILL FORM =====
+    // ===== FILL =====
     private void fillForm(){
 
         int row = table.getSelectedRow();
         if(row==-1) return;
 
         row = table.convertRowIndexToModel(row);
-
         Employee e = manager.getEmployees().get(row);
 
         txtId.setText(e.getId());
         txtName.setText(e.getName());
 
         if(e instanceof FulltimeEmployee){
-
             cbType.setSelectedItem("Fulltime");
             txtSalary.setText(String.valueOf(((FulltimeEmployee)e).getSalary()));
             txtHours.setText("");
-
         }
         else if(e instanceof PartTimeEmployee){
-
             cbType.setSelectedItem("PartTime");
-
             PartTimeEmployee p = (PartTimeEmployee)e;
-
             txtSalary.setText(String.valueOf(p.getRate()));
             txtHours.setText(String.valueOf(p.getHours()));
-
         }
-        else if(e instanceof Manager){
-
+        else{
             cbType.setSelectedItem("Manager");
-
             Manager m = (Manager)e;
-
             txtSalary.setText(String.valueOf(m.getSalary()));
             txtHours.setText(String.valueOf(m.getBonus()));
-
         }
 
         updateFormByType();
     }
 
-    // ===== CLEAR =====
     private void clearForm(){
-
         txtId.setText("");
         txtName.setText("");
         txtSalary.setText("");
