@@ -16,10 +16,7 @@ public abstract class Employee {
     public String getName(){
         return name;
     }
-
-    // Tính lương
     public abstract double calculateSalary();
 
-    // 🔥 NEW: dùng để lưu file (tránh instanceof)
     public abstract String toFileString();
 }
