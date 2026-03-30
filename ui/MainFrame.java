@@ -19,6 +19,16 @@ import java.util.ArrayList;
 import java.util.Locale;
 
 public class MainFrame extends JFrame {
+    // ===== FORMAT MONEY =====
+private String formatMoney(double value){
+    NumberFormat nf = NumberFormat.getInstance(new Locale("vi","VN"));
+    return nf.format(value);
+}
+
+// ===== PARSE MONEY =====
+private double parseMoney(String text){
+    return Double.parseDouble(text.replaceAll("[^0-9]", ""));
+}
 
     JComboBox<String> cbSearchType;
     JTextField txtId, txtName, txtSalary, txtHours, txtSearch;
@@ -217,17 +227,17 @@ public class MainFrame extends JFrame {
 
             if(type.equals("Fulltime")){
                 emp = new FulltimeEmployee(id,name,
-                        Double.parseDouble(txtSalary.getText()));
+                        parseMoney(txtSalary.getText()));
             }
             else if(type.equals("PartTime")){
                 emp = new PartTimeEmployee(id,name,
                         Integer.parseInt(txtHours.getText()),
-                        Double.parseDouble(txtSalary.getText()));
+                        parseMoney(txtSalary.getText()));
             }
             else{
                 emp = new Manager(id,name,
-                        Double.parseDouble(txtSalary.getText()),
-                        Double.parseDouble(txtHours.getText()));
+                        parseMoney(txtSalary.getText()),
+                        parseMoney(txtHours.getText()));
             }
         }
         catch(Exception ex){
@@ -283,19 +293,18 @@ public class MainFrame extends JFrame {
 
             if(type.equals("Fulltime")){
                 emp = new FulltimeEmployee(id,name,
-                        Double.parseDouble(txtSalary.getText()));
+                        parseMoney(txtSalary.getText()));
             }
             else if(type.equals("PartTime")){
                 emp = new PartTimeEmployee(id,name,
                         Integer.parseInt(txtHours.getText()),
-                        Double.parseDouble(txtSalary.getText()));
+                        parseMoney(txtSalary.getText()));
             }
             else{
                 emp = new Manager(id,name,
-                        Double.parseDouble(txtSalary.getText()),
-                        Double.parseDouble(txtHours.getText()));
+                        parseMoney(txtSalary.getText()),
+                        parseMoney(txtHours.getText()));
             }
-
             manager.updateEmployee(row, emp);
 
         }catch(Exception ex){
@@ -387,32 +396,37 @@ public class MainFrame extends JFrame {
 
         int row = table.getSelectedRow();
         if(row==-1) return;
-
+    
         row = table.convertRowIndexToModel(row);
-
+    
         Employee e = manager.getEmployees().get(row);
-
+    
         txtId.setText(e.getId());
         txtName.setText(e.getName());
-
+    
         if(e instanceof FulltimeEmployee){
             cbType.setSelectedItem("Fulltime");
-            txtSalary.setText(String.valueOf(((FulltimeEmployee)e).getSalary()));
+    
+            txtSalary.setText(formatMoney(((FulltimeEmployee)e).getSalary()));
             txtHours.setText("");
         }
         else if(e instanceof PartTimeEmployee){
             cbType.setSelectedItem("PartTime");
+    
             PartTimeEmployee p = (PartTimeEmployee)e;
-            txtSalary.setText(String.valueOf(p.getRate()));
+    
+            txtSalary.setText(formatMoney(p.getRate()));
             txtHours.setText(String.valueOf(p.getHours()));
         }
         else{
             cbType.setSelectedItem("Manager");
+    
             Manager m = (Manager)e;
-            txtSalary.setText(String.valueOf(m.getSalary()));
-            txtHours.setText(String.valueOf(m.getBonus()));
+    
+            txtSalary.setText(formatMoney(m.getSalary()));
+            txtHours.setText(formatMoney(m.getBonus()));
         }
-
+    
         updateFormByType();
     }
 
