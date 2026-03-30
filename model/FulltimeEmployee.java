@@ -12,7 +12,7 @@ public class FulltimeEmployee extends Employee {
     public double calculateSalary(){
         return salary;
     }
-    // 🔥 NEW: phục vụ lưu file
+
     @Override
     public String toFileString(){
         return "FULL," + id + "," + name + "," + salary;

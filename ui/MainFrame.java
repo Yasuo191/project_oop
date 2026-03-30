@@ -1,26 +1,36 @@
 package ui;
+
 import model.*;
 import service.EmployeeManager;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableRowSorter;
+
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Locale;
 
 public class MainFrame extends JFrame {
+
     JComboBox<String> cbSearchType;
     JTextField txtId, txtName, txtSalary, txtHours, txtSearch;
     JComboBox<String> cbType;
     JTable table;
-    JLabel lblSalary;
-    JLabel lblExtra;
+    JLabel lblSalary, lblExtra;
+
     EmployeeManager manager = new EmployeeManager();
+
     DefaultTableModel tableModel;
     TableRowSorter<DefaultTableModel> sorter;
+
     public MainFrame(){
 
         setTitle("Employee Management");
@@ -29,29 +39,36 @@ public class MainFrame extends JFrame {
         setLocationRelativeTo(null);
         setLayout(new BorderLayout(10,10));
 
-        // ===== LEFT PANEL =====
+        // ===== LEFT =====
         JPanel leftPanel = new JPanel(new BorderLayout(10,10));
         leftPanel.setBorder(BorderFactory.createTitledBorder("Employee Info"));
+
         JPanel formPanel = new JPanel(new GridLayout(6,2,8,8));
+
         formPanel.add(new JLabel("ID"));
         txtId = new JTextField();
         formPanel.add(txtId);
+
         formPanel.add(new JLabel("Name"));
         txtName = new JTextField();
         formPanel.add(txtName);
+
         formPanel.add(new JLabel("Type"));
-        cbType = new JComboBox<>(new String[]{
-                "Fulltime","PartTime","Manager"
-        });
+        cbType = new JComboBox<>(new String[]{"Fulltime","PartTime","Manager"});
         formPanel.add(cbType);
+
         lblSalary = new JLabel("Salary");
         formPanel.add(lblSalary);
+
         txtSalary = new JTextField();
         formPanel.add(txtSalary);
+
         lblExtra = new JLabel("Extra");
         formPanel.add(lblExtra);
+
         txtHours = new JTextField();
         formPanel.add(txtHours);
+
         leftPanel.add(formPanel,BorderLayout.CENTER);
 
         // ===== BUTTON =====
@@ -76,8 +93,12 @@ public class MainFrame extends JFrame {
         String[] columns = {"ID","Name","Type","Salary"};
 
         tableModel = new DefaultTableModel(columns,0){
-            public boolean isCellEditable(int row,int column){
-                return false;
+            public boolean isCellEditable(int r,int c){ return false; }
+
+            @Override
+            public Class<?> getColumnClass(int column){
+                if(column == 3) return Double.class; // 🔥 QUAN TRỌNG
+                return String.class;
             }
         };
 
@@ -85,8 +106,26 @@ public class MainFrame extends JFrame {
         table.setRowHeight(25);
         table.setSelectionBackground(new Color(180,220,255));
 
+        // ===== SORTER =====
         sorter = new TableRowSorter<>(tableModel);
         table.setRowSorter(sorter);
+
+        // ===== FORMAT LƯƠNG (RENDERER) =====
+        table.getColumnModel().getColumn(3).setCellRenderer(
+            new DefaultTableCellRenderer(){
+
+                NumberFormat nf = NumberFormat.getInstance(new Locale("vi","VN"));
+
+                @Override
+                protected void setValue(Object value){
+                    if(value instanceof Number){
+                        setText(nf.format(value) + " VND");
+                    } else {
+                        setText("");
+                    }
+                }
+            }
+        );
 
         add(new JScrollPane(table),BorderLayout.CENTER);
 
@@ -136,7 +175,6 @@ public class MainFrame extends JFrame {
 
     // ===== UPDATE FORM =====
     private void updateFormByType(){
-
         String type = cbType.getSelectedItem().toString();
 
         if(type.equals("Fulltime")){
@@ -211,7 +249,6 @@ public class MainFrame extends JFrame {
     private void deleteEmployee(){
 
         int row = table.getSelectedRow();
-
         if(row == -1){
             JOptionPane.showMessageDialog(this,"Select employee first");
             return;
@@ -230,7 +267,6 @@ public class MainFrame extends JFrame {
     private void updateEmployee(){
 
         int row = table.getSelectedRow();
-
         if(row == -1){
             JOptionPane.showMessageDialog(this,"Select employee first");
             return;
@@ -238,12 +274,12 @@ public class MainFrame extends JFrame {
 
         row = table.convertRowIndexToModel(row);
 
-        Employee emp;
-
         try{
             String type = cbType.getSelectedItem().toString();
             String id = txtId.getText();
             String name = txtName.getText();
+
+            Employee emp;
 
             if(type.equals("Fulltime")){
                 emp = new FulltimeEmployee(id,name,
@@ -259,13 +295,13 @@ public class MainFrame extends JFrame {
                         Double.parseDouble(txtSalary.getText()),
                         Double.parseDouble(txtHours.getText()));
             }
-        }
-        catch(Exception ex){
+
+            manager.updateEmployee(row, emp);
+
+        }catch(Exception ex){
             JOptionPane.showMessageDialog(this,"Invalid number input");
             return;
         }
-
-        manager.updateEmployee(row, emp);
 
         manager.saveToFile();
         loadTable();
@@ -297,38 +333,39 @@ public class MainFrame extends JFrame {
 
         for(Employee e : list){
             tableModel.addRow(new Object[]{
-                    e.getId(), e.getName(),
+                    e.getId(),
+                    e.getName(),
                     e.getClass().getSimpleName(),
-                    e.calculateSalary()
+                    e.calculateSalary() // 🔥 giữ số
             });
         }
     }
 
     // ===== SEARCH =====
-private void searchEmployee(){
+    private void searchEmployee(){
 
-    String keyword = txtSearch.getText();
-    String type = cbSearchType.getSelectedItem().toString();
+        String keyword = txtSearch.getText();
+        String type = cbSearchType.getSelectedItem().toString();
 
-    tableModel.setRowCount(0);
+        ArrayList<Employee> result;
 
-    ArrayList<Employee> result;
+        if(type.equals("ID")){
+            result = manager.searchById(keyword);
+        } else {
+            result = manager.searchByName(keyword);
+        }
 
-    if(type.equals("ID")){
-        result = manager.searchById(keyword);
-    } else {
-        result = manager.searchByName(keyword);
+        tableModel.setRowCount(0);
+
+        for(Employee e : result){
+            tableModel.addRow(new Object[]{
+                    e.getId(),
+                    e.getName(),
+                    e.getClass().getSimpleName(),
+                    e.calculateSalary()
+            });
+        }
     }
-
-    for(Employee e : result){
-        tableModel.addRow(new Object[]{
-                e.getId(),
-                e.getName(),
-                e.getClass().getSimpleName(),
-                e.calculateSalary()
-        });
-    }
-}
 
     // ===== LOAD =====
     private void loadTable(){
@@ -352,6 +389,7 @@ private void searchEmployee(){
         if(row==-1) return;
 
         row = table.convertRowIndexToModel(row);
+
         Employee e = manager.getEmployees().get(row);
 
         txtId.setText(e.getId());
